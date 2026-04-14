@@ -1,13 +1,128 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// CodeViva AI — PostgreSQL schema (Auth.js + scans)
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ScanStatus {
+  PENDING
+  PROCESSING
+  COMPLETE
+  FAILED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  /// bcrypt hash for email/password sign-in; null if OAuth-only
+  passwordHash  String?
+  role          UserRole  @default(USER)
+  accounts      Account[]
+  sessions      Session[]
+  scans         Scan[]
+  teamsOwned    Team[]    @relation("TeamOwner")
+  teamMembers   TeamMember[]
+  comparisons   Comparison[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Scan {
+  id          String     @id @default(cuid())
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  title       String?
+  sourceType  String
+  sourceRef   String?
+  fileKey     String?
+  status      ScanStatus @default(PENDING)
+  progress    Int        @default(0)
+  options     Json?
+  result      Json?
+  error       String?    @db.Text
+  shareToken  String     @unique @default(cuid())
+  isPublic    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  comparisonsA Comparison[] @relation("ScanA")
+  comparisonsB Comparison[] @relation("ScanB")
+}
+
+model Comparison {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  scanAId   String
+  scanBId   String
+  scanA     Scan     @relation("ScanA", fields: [scanAId], references: [id], onDelete: Cascade)
+  scanB     Scan     @relation("ScanB", fields: [scanBId], references: [id], onDelete: Cascade)
+  result    Json?
+  createdAt DateTime @default(now())
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User     @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members   TeamMember[]
+  createdAt DateTime @default(now())
+}
+
+model TeamMember {
+  id     String @id @default(cuid())
+  teamId String
+  userId String
+  role   String
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
 }
