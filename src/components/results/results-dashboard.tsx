@@ -474,18 +474,51 @@ export function ResultsDashboard({
                   <section className="space-y-6">
                     <div className="grid gap-4 md:grid-cols-2">
                       {[
-                        "Generic naming",
-                        "Boilerplate structure",
-                        "Repeated logic",
-                        "Over-commenting",
-                      ].map((label) => (
+                        {
+                          label: "AI likelihood",
+                          value: `${data.originality.aiLikelihood}%`,
+                          detail:
+                            data.originality.aiLikelihood > 65
+                              ? "High probability of AI-assisted structure."
+                              : data.originality.aiLikelihood > 35
+                                ? "Mixed signals detected across files."
+                                : "Mostly human-authored style signals.",
+                        },
+                        {
+                          label: "Template similarity",
+                          value: `${data.meta.templateSimilarity}%`,
+                          detail:
+                            data.meta.templateSimilarity > 65
+                              ? "Strong boilerplate/template overlap."
+                              : data.meta.templateSimilarity > 35
+                                ? "Moderate reuse and scaffold overlap."
+                                : "Low template duplication observed.",
+                        },
+                        {
+                          label: "Suspicious files",
+                          value: String(data.originality.suspiciousFiles.length),
+                          detail:
+                            data.originality.suspiciousFiles.length > 0
+                              ? `${data.originality.suspiciousFiles[0]?.path ?? "Top file"} flagged with highest risk.`
+                              : "No suspicious files were flagged.",
+                        },
+                        {
+                          label: "Heatmap coverage",
+                          value: String(data.originality.similarityHeatmap.length),
+                          detail:
+                            data.originality.similarityHeatmap.length > 0
+                              ? "File-to-file similarity profile generated."
+                              : "Similarity heatmap unavailable for this scan.",
+                        },
+                      ].map((card) => (
                         <div
-                          key={label}
+                          key={card.label}
                           className="cv-surface rounded-2xl p-5 transition hover:-translate-y-0.5"
                         >
-                          <p className="text-xs font-medium text-zinc-400">{label}</p>
+                          <p className="text-xs font-medium text-zinc-400">{card.label}</p>
+                          <p className="mt-2 text-2xl font-semibold text-white">{card.value}</p>
                           <p className="mt-2 text-sm text-zinc-300">
-                            Surfaced via structure + embedding similarity signals.
+                            {card.detail}
                           </p>
                         </div>
                       ))}
