@@ -8,6 +8,7 @@ export type ScanOptions = {
   interviewQuestions: boolean;
   securityAudit: boolean;
   codeQuality: boolean;
+  fastMode: boolean;
 };
 
 export type QuestionItem = {
@@ -23,6 +24,7 @@ export type SecurityIssue = {
   severity: "low" | "medium" | "high" | "critical";
   detail: string;
   file?: string;
+  source?: "ai" | "heuristic" | "fallback";
 };
 
 export type AnalysisResult = {
@@ -67,4 +69,5 @@ export const defaultScanOptions: ScanOptions = {
   interviewQuestions: true,
   securityAudit: true,
   codeQuality: true,
+  fastMode: true,
 };

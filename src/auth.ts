@@ -18,6 +18,10 @@ const authSecret =
   process.env.AUTH_SECRET ??
   process.env.NEXTAUTH_SECRET ??
   "codeviva-dev-only-secret-min-32-chars-do-not-use-in-prod";
+const githubClientId =
+  process.env.GITHUB_CLIENT_ID?.trim() ?? process.env.GITHUB_ID?.trim() ?? "";
+const githubClientSecret =
+  process.env.GITHUB_CLIENT_SECRET?.trim() ?? process.env.GITHUB_SECRET?.trim() ?? "";
 
 function displayName(name?: string | null, email?: string | null): string {
   const n = name?.trim();
@@ -28,11 +32,11 @@ function displayName(name?: string | null, email?: string | null): string {
 
 const providers = [];
 
-if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
+if (githubClientId && githubClientSecret) {
   providers.push(
     GitHub({
-      clientId: process.env.GITHUB_ID,
-      clientSecret: process.env.GITHUB_SECRET,
+      clientId: githubClientId,
+      clientSecret: githubClientSecret,
     }),
   );
 }

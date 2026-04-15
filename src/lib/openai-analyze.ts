@@ -12,9 +12,11 @@ function buildUserPrompt(
   stats: HeuristicStats,
   options: ScanOptions,
 ): string {
+  const maxFiles = options.fastMode ? 20 : 40;
+  const maxCharsPerFile = options.fastMode ? 900 : 1800;
   const summary = files
-    .slice(0, 40)
-    .map((f) => `--- ${f.path} (${f.bytes}b) ---\n${f.content.slice(0, 1800)}`)
+    .slice(0, maxFiles)
+    .map((f) => `--- ${f.path} (${f.bytes}b) ---\n${f.content.slice(0, maxCharsPerFile)}`)
     .join("\n\n");
 
   const langs = Object.entries(stats.languages)
@@ -171,16 +173,7 @@ function fallbackResult(
           },
         ]
       : [],
-    security: options.securityAudit
-      ? [
-          {
-            category: "Missing validation",
-            severity: "medium",
-            detail: "Verify all external inputs are validated at API boundaries.",
-            file: files[0]?.path,
-          },
-        ]
-      : [],
+    security: [],
     architecture: {
       patterns: ["Layered modules", "Feature folders"],
       componentHierarchy: "Review folder structure for separation of concerns.",
@@ -214,15 +207,23 @@ export async function analyzeWithOpenAI(
   const user = buildUserPrompt(files, stats, options);
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: user },
-      ],
-    });
+    const completion = await Promise.race([
+      openai.chat.completions.create({
+        model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+        temperature: options.fastMode ? 0.1 : 0.2,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: SYSTEM },
+          { role: "user", content: user },
+        ],
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error("OpenAI analysis timed out, using fast fallback.")),
+          options.fastMode ? 22_000 : 45_000,
+        ),
+      ),
+    ]);
 
     const raw = completion.choices[0]?.message?.content;
     if (!raw) return fallbackResult(files, stats, options);

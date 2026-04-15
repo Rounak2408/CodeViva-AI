@@ -21,6 +21,13 @@ enum ScanStatus {
   FAILED
 }
 
+enum TeamInviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -35,6 +42,8 @@ model User {
   scans         Scan[]
   teamsOwned    Team[]    @relation("TeamOwner")
   teamMembers   TeamMember[]
+  invitesSent   TeamInvite[] @relation("InvitedBy")
+  invitesReceived TeamInvite[] @relation("InviteeUser")
   comparisons   Comparison[]
 }
 
@@ -108,12 +117,13 @@ model Comparison {
 }
 
 model Team {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   name      String
   ownerId   String
-  owner     User     @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner     User         @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members   TeamMember[]
-  createdAt DateTime @default(now())
+  invites   TeamInvite[]
+  createdAt DateTime     @default(now())
 }
 
 model TeamMember {
@@ -125,4 +135,25 @@ model TeamMember {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, userId])
+}
+
+model TeamInvite {
+  id            String           @id @default(cuid())
+  teamId        String
+  team          Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  invitedById   String
+  invitedBy     User             @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+  inviteeUserId String?
+  inviteeUser   User?            @relation("InviteeUser", fields: [inviteeUserId], references: [id], onDelete: SetNull)
+  inviteEmail   String?
+  githubUsername String?
+  inviteToken   String           @default(cuid())
+  expiresAt     DateTime?
+  role          String           @default("MEMBER")
+  status        TeamInviteStatus @default(PENDING)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([teamId, status])
+  @@index([inviteToken])
 }

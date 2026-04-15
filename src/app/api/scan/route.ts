@@ -31,6 +31,7 @@ const scanOptionsSchema = z
     interviewQuestions: z.boolean().optional(),
     securityAudit: z.boolean().optional(),
     codeQuality: z.boolean().optional(),
+    fastMode: z.boolean().optional(),
   })
   .strict();
 const jsonBodySchema = z

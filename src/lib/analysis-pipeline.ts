@@ -12,26 +12,52 @@ import {
 import { embeddingSimilarityHeatmap } from "@/lib/embeddings";
 import { analyzeWithOpenAI } from "@/lib/openai-analyze";
 
+async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  fallback: () => T,
+): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        timer = setTimeout(() => resolve(fallback()), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export async function runAnalysisPipeline(
   files: RepoFile[],
   options: ScanOptions,
 ): Promise<AnalysisResult> {
   const stats = runHeuristics(files);
-  const [heuristicSecurity, heatmap] = await Promise.all([
+  const embTimeoutMs = options.fastMode ? 4_000 : 14_000;
+  const [heuristicSecurity, heatmap, base] = await Promise.all([
     Promise.resolve(findSecuritySignals(files)),
-    embeddingSimilarityHeatmap(files),
+    withTimeout(
+      embeddingSimilarityHeatmap(files, options.fastMode),
+      embTimeoutMs,
+      () => [],
+    ),
+    analyzeWithOpenAI(files, stats, options),
   ]);
 
-  const base = await analyzeWithOpenAI(files, stats, options);
-
   if (options.securityAudit) {
-    const merged = [...base.security];
+    const merged = base.security.map((s) => ({
+      ...s,
+      source: s.source ?? "ai",
+    }));
     for (const h of heuristicSecurity) {
       merged.push({
         category: h.category,
         severity: h.severity === "high" ? "high" : "medium",
         detail: h.detail,
         file: h.file,
+        source: "heuristic",
       });
     }
     const seen = new Set<string>();
@@ -43,9 +69,9 @@ export async function runAnalysisPipeline(
     });
   }
 
-  if (base.originality?.similarityHeatmap?.length < 4) {
+  if (base.originality?.similarityHeatmap?.length < 4 && heatmap.length > 0) {
     base.originality.similarityHeatmap = heatmap;
-  } else {
+  } else if (heatmap.length > 0) {
     base.originality.similarityHeatmap = mergeHeatmaps(
       base.originality.similarityHeatmap,
       heatmap,

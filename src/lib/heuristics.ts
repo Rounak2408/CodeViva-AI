@@ -131,6 +131,14 @@ const SECRET_PATTERNS: { re: RegExp; category: string }[] = [
     re: /BEGIN (RSA |OPENSSH )?PRIVATE KEY/,
     category: "Hardcoded secrets",
   },
+  {
+    re: /xox[baprs]-[a-zA-Z0-9-]{10,}/,
+    category: "Hardcoded secrets",
+  },
+  {
+    re: /gh[pousr]_[A-Za-z0-9_]{20,}/,
+    category: "Hardcoded secrets",
+  },
 ];
 
 export function findSecuritySignals(
@@ -171,6 +179,46 @@ export function findSecuritySignals(
         category: "Unsafe APIs",
         severity: "high",
         detail: "Use of eval() detected.",
+        file: f.path,
+      });
+    }
+    if (/dangerouslySetInnerHTML\s*=/.test(f.content)) {
+      issues.push({
+        category: "XSS risk",
+        severity: "medium",
+        detail: "dangerouslySetInnerHTML detected — sanitize untrusted HTML input.",
+        file: f.path,
+      });
+    }
+    if (/Access-Control-Allow-Origin\s*[:=]\s*['"]\*['"]/.test(f.content)) {
+      issues.push({
+        category: "CORS policy",
+        severity: "medium",
+        detail: "Wildcard CORS origin detected. Restrict to trusted origins.",
+        file: f.path,
+      });
+    }
+    if (/jwt\.sign\s*\([^)]*['"][^'"]{1,20}['"]/.test(f.content)) {
+      issues.push({
+        category: "Weak JWT secret",
+        severity: "high",
+        detail: "Potential hardcoded/weak JWT secret in signing call.",
+        file: f.path,
+      });
+    }
+    if (/cookie\s*\([^)]*(secure\s*:\s*false|httpOnly\s*:\s*false)/i.test(f.content)) {
+      issues.push({
+        category: "Cookie hardening",
+        severity: "medium",
+        detail: "Cookie flags appear weak (secure/httpOnly disabled).",
+        file: f.path,
+      });
+    }
+    if (/\b(md5|sha1)\s*\(/i.test(f.content)) {
+      issues.push({
+        category: "Weak cryptography",
+        severity: "medium",
+        detail: "Weak hash algorithm detected (MD5/SHA1). Prefer stronger hashes.",
         file: f.path,
       });
     }

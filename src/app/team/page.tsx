@@ -1,8 +1,9 @@
 import { Users } from "lucide-react";
+import { TeamCollaborationPanel } from "@/components/team/team-collaboration-panel";
 
 export default function TeamPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-16 text-center">
+    <div className="mx-auto max-w-5xl px-4 py-16 text-center">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600">
         <Users className="h-7 w-7 text-white" />
       </div>
@@ -17,6 +18,7 @@ export default function TeamPage() {
         <code className="text-indigo-300">TeamMember</code> — ready for your SSO
         layer.
       </p>
+      <TeamCollaborationPanel />
     </div>
   );
 }

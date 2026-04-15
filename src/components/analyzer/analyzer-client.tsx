@@ -44,6 +44,7 @@ export function AnalyzerClient({ defaultTab }: Props) {
   const [loading, setLoading] = useState(false);
   const [stageIdx, setStageIdx] = useState(0);
   const [hasGithubToken, setHasGithubToken] = useState<boolean | null>(null);
+  const [hasOpenAiKey, setHasOpenAiKey] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!loading) return;
@@ -60,11 +61,22 @@ export function AnalyzerClient({ defaultTab }: Props) {
       try {
         const res = await fetch("/api/runtime/flags", { cache: "no-store" });
         if (!res.ok) return;
-        const data = (await res.json()) as { hasGithubToken?: boolean };
+        const data = (await res.json()) as {
+          hasGithubToken?: boolean;
+          hasOpenAiKey?: boolean;
+          fastScanDefault?: boolean;
+        };
         if (!alive) return;
         setHasGithubToken(Boolean(data.hasGithubToken));
+        setHasOpenAiKey(Boolean(data.hasOpenAiKey));
+        if (typeof data.fastScanDefault === "boolean") {
+          setOptions((prev) => ({ ...prev, fastMode: data.fastScanDefault }));
+        }
       } catch {
-        if (alive) setHasGithubToken(null);
+        if (alive) {
+          setHasGithubToken(null);
+          setHasOpenAiKey(null);
+        }
       }
     };
     void loadFlags();
@@ -229,6 +241,12 @@ export function AnalyzerClient({ defaultTab }: Props) {
                     large repos may be slower; ZIP is most reliable.
                   </p>
                 )}
+                {hasOpenAiKey === false && (
+                  <p className="text-xs text-amber-300/90">
+                    No <code className="rounded bg-white/5 px-1">OPENAI_API_KEY</code> on server —
+                    scan will run in fallback mode.
+                  </p>
+                )}
               </TabsContent>
 
               <TabsContent value="upload" className="mt-8 space-y-6">
@@ -285,6 +303,7 @@ export function AnalyzerClient({ defaultTab }: Props) {
               <div className="mt-4 flex flex-wrap gap-2">
                 {(
                   [
+                    ["fastMode", "Fast scan"],
                     ["aiDetection", "AI detection"],
                     ["vivaQuestions", "Viva"],
                     ["interviewQuestions", "Interview"],
@@ -307,6 +326,11 @@ export function AnalyzerClient({ defaultTab }: Props) {
                   </label>
                 ))}
               </div>
+              {options.fastMode && (
+                <p className="mt-3 text-xs text-emerald-300/90">
+                  Fast scan enabled: optimized for lower latency and higher success on deployed quota limits.
+                </p>
+              )}
             </div>
 
             <div className="mt-10">

@@ -705,7 +705,7 @@ export function ResultsDashboard({
                     {data.security.length === 0 ? (
                       <div className="cv-surface rounded-2xl px-8 py-16 text-center">
                         <Shield className="mx-auto h-10 w-10 text-emerald-500/80" />
-                        <p className="mt-4 text-zinc-400">No security issues in this scan profile.</p>
+                        <p className="mt-4 text-zinc-400">No security issues detected by AI/heuristics.</p>
                       </div>
                     ) : (
                       data.security.map((s, i) => (
@@ -720,6 +720,11 @@ export function ResultsDashboard({
                             <AlertTriangle className="h-4 w-4 shrink-0 opacity-80" />
                             <span className="font-semibold capitalize">{s.severity}</span>
                             <span className="text-white/90">· {s.category}</span>
+                            {s.source && (
+                              <Badge variant="outline" className="ml-auto border-white/20 text-[10px]">
+                                {s.source}
+                              </Badge>
+                            )}
                           </div>
                           <p className="mt-2 text-sm text-zinc-200/90">{s.detail}</p>
                           {s.file && (

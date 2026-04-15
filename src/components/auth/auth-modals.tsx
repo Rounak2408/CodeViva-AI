@@ -240,7 +240,8 @@ function LoginPanel({
     }
     if (provider === "github" && !oauth.github) {
       toast.message("GitHub sign-in", {
-        description: "Add GITHUB_ID and GITHUB_SECRET to enable.",
+        description:
+          "Add GITHUB_CLIENT_ID + GITHUB_CLIENT_SECRET (or GITHUB_ID + GITHUB_SECRET) to enable.",
       });
       return;
     }
@@ -487,7 +488,8 @@ function SignupPanel({
     }
     if (provider === "github" && !oauth.github) {
       toast.message("GitHub sign-in", {
-        description: "Add GITHUB_ID and GITHUB_SECRET to enable.",
+        description:
+          "Add GITHUB_CLIENT_ID + GITHUB_CLIENT_SECRET (or GITHUB_ID + GITHUB_SECRET) to enable.",
       });
       return;
     }
