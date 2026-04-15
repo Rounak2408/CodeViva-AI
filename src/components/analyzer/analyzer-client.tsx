@@ -69,8 +69,9 @@ export function AnalyzerClient({ defaultTab }: Props) {
         if (!alive) return;
         setHasGithubToken(Boolean(data.hasGithubToken));
         setHasOpenAiKey(Boolean(data.hasOpenAiKey));
-        if (typeof data.fastScanDefault === "boolean") {
-          setOptions((prev) => ({ ...prev, fastMode: data.fastScanDefault }));
+        const fastScanDefault = data.fastScanDefault;
+        if (typeof fastScanDefault === "boolean") {
+          setOptions((prev) => ({ ...prev, fastMode: fastScanDefault }));
         }
       } catch {
         if (alive) {
